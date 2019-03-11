@@ -1,5 +1,5 @@
 const express           = require('express');
-const jwt               = require('jsonwebtoken');
+//const jwt               = require('jsonwebtoken');
 const morgan            = require('morgan');
 //const mongoose          = require('mongoose');
 const cors              = require('./cors');
@@ -8,26 +8,16 @@ const app               = express();
 
 process.env.JWT_KEY = 'secret_key';
 
-//mongoose.Promise = global.Promise;
-//mongoose.connect('mongodb://localhost/jwtdb');
-//mongoose.connection.once('open', () => {
-//    console.log("Database connection was succesfull");
-//}).on('error', (error) =>{
-//    console.log("Connection error " + error );
-//})
-
-
-
-
-
 app.use(cors);
 app.use(express.json());
 app.use(morgan('dev'));
+
 //app.use('/posts', require('./routes/posts'));
 app.use('/users', require('./routes/users'));
 
-
-
+app.get('/', function(req, res){
+    res.sendFile(__dirname + '/index.html');
+});
 
 app.use((req, res, next) => {
     const error = new Error('Route not found!');

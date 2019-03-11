@@ -6,9 +6,10 @@ const jwtauth       = require('../jwt-auth');
 
 
 router.get('/test', jwtauth, controller.withToken);
-//router.get('', controller.getUsers);
-//router.get('/:id', controller.getUser);
 router.post('/signup', controller.userSignup);
 router.post('/signin', controller.userSignin);
+
+//router.get('', controller.getUsers);
+//router.get('/:id', controller.getUser); 
 
 module.exports =  router;
