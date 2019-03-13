@@ -41,62 +41,143 @@ const mysqlConnection = require('../database.js');
 */
 
 exports.userSignup = (req, res) =>{
-    // verification code is needed
-    bcrypt.hash(req.body.password, 16,(err, hash) => {
-        let query = "INSERT INTO users VALUES (NULL,'"+req.body.email+"','"+hash+"','"+req.body.role+"')";
-        mysqlConnection.query(query, (err, rows, fields) => {
+ 
+    let value1 = req.body.email;
+    let value2 = req.body.password;
+    let value3 = 'Customer';
+
+    let Regx = /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/;
+    if(Regx.test(value1)){
+        mysqlConnection.query({
+            sql: 'SELECT * FROM users WHERE `email` = ?',
+            timeout: 10000, // 10s
+            values: [value1]
+        }, (err, rows, fields) => {
             if (!err) {
-                res.status(201).json(
-                    {message : "user created"}
-                )
+                if(rows.length == 0){
+                    let Regx = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$/;
+                    if(Regx.test(value2)){
+                        //all good
+                        bcrypt.hash(value2, 16,(err, hash) => {
+                            mysqlConnection.query({
+                                sql: 'INSERT INTO users VALUES (NULL, ?, ?, ?)',
+                                timeout: 10000, // 10s
+                                values: [value1,hash,value3]
+                            }, (err, rows, fields) => {
+                                if (!err) {
+                                    return res.status(201).json({
+                                        message: "account created sucessfully"
+                                    });
+                                } else {
+                                    return res.status(401).json({
+                                        message: "couldn't create an account, please contact administration"
+                                    });
+                                }
+                            });
+                        }) 
+                    }else{
+                        return res.status(401).json({
+                            message: "not a valid password",
+                            hint : "Minimum eight characters, at least one letter, one number and one special character"
+                        });
+                    }
+                }else{
+                    return res.status(401).json({
+                        message: "user already exist, please login"
+                    });
+                }
             } else {
                 return res.status(401).json({
-                    error: "Creation error"
+                    message: "Something is wrong, please contact administration"
                 });
             }
         });
-    })  
+    }else{
+        return res.status(401).json({
+            message: "not a valid email adress"
+        });
+    }
+
+    
+
+ 
+
 };
 
 exports.userSignin = (req, res, next) =>{
-    // verification code is needed
-    mysqlConnection.query("SELECT * FROM users WHERE email = '"+req.body.email+"'", (err, rows, fields) => {
-        if (!err) {
-            const token = jwt.sign(
-                {
-                    idUser: rows[0].idUser,
-                    email: rows[0].email,
-                    role: rows[0].role
-                }, 
-                process.env.JWT_KEY,
-                {
-                    expiresIn: '1m'
-                }
-            );
-            const refreshToken = jwt.sign(
-                {
-                    idUser: rows[0].idUser,
-                    email: rows[0].email,
-                    role: rows[0].role
-                }, 
-                process.env.JWT_KEY,
-                {
-                    expiresIn: '1h'
-                }  
-            );
-            let UserRes = {
-                idUser : rows[0].idUser,
-                email: rows[0].email,
-                role: rows[0].role,
-                token: token,
-                refreshToken: refreshToken
-            }
-            res.json(UserRes);
 
-        } else {
-            console.log(err);
-        }
-    });
+    let value1 = req.body.email;
+    let value2 = req.body.password;
+
+    
+
+   
+    
+    
+
+    let Regx = /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/;
+    if(Regx.test(value1)){
+        // verification code is needed
+        mysqlConnection.query({
+            sql: 'SELECT * FROM users WHERE email =  ?',
+            timeout: 10000, // 10s
+            values: [value1]
+        }, (err, rows, fields) => {
+            if (!err) {
+                if(rows.length == 1){
+                    if(/*value2 match rows.password*/true){
+                       // bcrypt
+
+                    }else{
+                         //password is not correct
+                    }
+                }else{
+                    //user does not exist
+                }
+
+                /*
+                const token = jwt.sign(
+                    {
+                        idUser: rows[0].idUser,
+                        email: rows[0].email,
+                        role: rows[0].role
+                    }, 
+                    process.env.JWT_KEY,
+                    {
+                        expiresIn: '1m'
+                    }
+                );
+                const refreshToken = jwt.sign(
+                    {
+                        idUser: rows[0].idUser,
+                        email: rows[0].email,
+                        role: rows[0].role
+                    }, 
+                    process.env.JWT_KEY,
+                    {
+                        expiresIn: '1h'
+                    }  
+                );
+                let UserRes = {
+                    idUser : rows[0].idUser,
+                    email: rows[0].email,
+                    role: rows[0].role,
+                    token: token,
+                    refreshToken: refreshToken
+                }
+                res.json(UserRes);
+                */
+            } else {
+                //error
+            }
+        });
+    }else{
+        //not a valid email
+    }
+
+    
+
+
 };
 
 exports.setPersonalInfo = (req, res, nex) => {
@@ -165,7 +246,25 @@ exports.addAdress = (req, res, next) => {
 };
 
 exports.setShippingAdress = (req, res, next) => {
-    console.log("setShippingAdress");
+    let value1 = req.body.sameAsBilling;
+    let value2 = req.body.idBillingAdress;
+    let value3 = req.body.idUser;
+    let value4 = req.body.note;
+
+    mysqlConnection.query({
+        sql: 'INSERT INTO shippingadress VALUES (NULL, ?, ?, ?, ?)',
+        timeout: 10000, // 10s
+        values: [value1,value2,value3,value4]
+    }, (err, rows, fields) => {
+        if (!err) {
+            res.status(201).json(rows);
+        } else {
+            return res.status(401).json({
+                error: "error"
+            });
+        }
+    });
+
 };
 
 exports.updatePersonalInfo = (req, res, next) => {
