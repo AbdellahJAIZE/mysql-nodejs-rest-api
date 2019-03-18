@@ -19,9 +19,9 @@ router.get('/getPersonalInfo/:idUser', jwtauth, controller.getPersonalInfo);
 router.get('/getUserAdress/:idUser', jwtauth, controller.getUserAdress);
 router.get('/getShippingAdress/:idUser', jwtauth, controller.getShippingAdress);
 
-router.delete('deleteAdress/:idAdress', jwtauth, controller.deleteAdress);
-router.delete('deleteShippingAdress/:idShippingAdress', jwtauth, controller.deleteShippingAdress);
-router.delete('deletePersonalInfo', jwtauth, controller.deletePersonalInfo);
+router.delete('/deleteAdress/:idAdress', jwtauth, controller.deleteAdress);
+router.delete('/deleteShippingAdress/:idShippingAdress', jwtauth, controller.deleteShippingAdress);
+router.delete('/deletePersonalInfo/:idPersonalInfo', jwtauth, controller.deletePersonalInfo);
 
 
 //router.get('/:idUser', controller.getUserWithAllInfo); 

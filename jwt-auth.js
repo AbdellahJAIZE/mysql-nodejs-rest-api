@@ -18,7 +18,7 @@ module.exports = (req, res, next) => {
                 if(err) {
                     console.log('refresh token is no longer valid, relogin');
                     return res.status(401).json({
-                        error: "Unaunthorized"
+                        error: "refresh token is no longer valid, relogin"
                     });
                 }
                 if(doc) {

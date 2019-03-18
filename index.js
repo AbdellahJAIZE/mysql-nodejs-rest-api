@@ -14,6 +14,9 @@ app.use(morgan('dev'));
 
 //app.use('/posts', require('./routes/posts'));
 app.use('/users', require('./routes/users'));
+app.use('/products', require('./routes/products'));
+app.use('/brands', require('./routes/brands'));
+app.use('/suppliers', require('./routes/suppliers'));
 
 app.get('/', function(req, res){
     res.sendFile(__dirname + '/index.html');

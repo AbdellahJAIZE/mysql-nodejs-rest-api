@@ -21,19 +21,17 @@ const mysqlConnection = require('../database.js');
     });
 
 
-
-
     mysqlConnection.query({
         sql: 'SELECT * FROM users WHERE `email` = ? or email = ?',
         timeout: 10000, // 10s
         values: [var1,var2]
     }, (err, rows, fields) => {
         if (!err) {
-            //res.status(201).json(rows);
+            res.status(201).json(rows);
         } else {
-           // return res.status(401).json({
-           //     error: "error"
-           // });
+            return res.status(401).json({
+                error: "error"
+            });
         }
     });
 
@@ -156,7 +154,7 @@ exports.userSignin = (req, res, next) =>{
                                 token: token,
                                 refreshToken: refreshToken
                             }
-                            self.status(201).json(UserRes);
+                            self.status(200).json(UserRes);
                         }                
                     })
                 }else{
@@ -318,6 +316,7 @@ exports.addAdress = (req, res, next) => {
 };
 
 exports.setShippingAdress = (req, res, next) => {
+    //TODO : user verif (role)
     let value1 = req.body.sameAsBilling;
     let value2 = req.body.idBillingAdress;
     let value3 = req.body.idUser;
@@ -444,9 +443,7 @@ exports.updatePersonalInfo = (req, res, next) => {
 };
 
 exports.updateAdress = (req, res, next) => {
-    console.log("updateAdress");
-    //not done yet
-
+    
     let token = req.headers.authorization.split(" ")[1];
     var decoded = jwt.verify(token, process.env.JWT_KEY);
 
@@ -463,89 +460,356 @@ exports.updateAdress = (req, res, next) => {
         let value5 = req.body.city;
         let value6 = req.body.region;
         let value7 = req.body.country;
-        let value8 = req.body.idUser;
-
-        let regex = /^[a-z]([-']?[a-z]+)*( [a-z]([-']?[a-z]+)*)+$/;
-        if(regex.test(value1)){
-            let regex = /^\d{5}$/;
+        let value9 = req.params.idAdress;
+        console.log(typeof(value9) == 'undefined')
+        if(typeof(value9) == 'undefined'){
+            return res.status(401).json({
+                error: "no id for update has been set"
+            });
+        }else{
+        
+            let regex = /^[a-z]([-']?[a-z]+)*( [a-z]([-']?[a-z]+)*)+$/;
             if(regex.test(value1)){
-
-                let sqlQ = 'UPDATE personalinfo SET firstName = ?, lastName =? ,birthDay = ?, gender = ?, phone = ?, type = ? WHERE idUser = ?';
-                let vals = [value1,value2,value3,value4,value5,value6,value7];
                 
-                if(decoded.role != 'Customer'){
-                    sqlQ = 'UPDATE personalinfo SET firstName = ?, lastName =? ,status = ?, birthDay = ?, gender = ?, phone = ?, type = ? WHERE idUser = ?';
-                    vals = [value1,value2,value3,value4,value5,value6,value7];
-                }
+                if(typeof(value4)=="number"){
 
-                mysqlConnection.query({
-                    sql: sqlQ,
-                    timeout: 10000, // 10s
-                    values: vals
-                }, (err, rows, fields) => {
-                    if (!err) {
-                        mysqlConnection.query({
-                            sql: 'INSERT INTO useradress VALUES (NULL, ?, ?)',
-                            timeout: 10000, // 10s
-                            values: [rows.insertId,value8]
-                        }, (err, rows, fields) => {
-                            if (!err) {
-                                res.status(201).json(rows);
-                            } else {
-                                return res.status(401).json({
-                                    error: "something is wrong, please contact support",
-                                    info: err.sqlMessage
-                                });
-                            }
-                        });
-                    } else {
-                        return res.status(401).json({
-                            error: "something is wrong, please contact support",
-                            info: err.sqlMessage
-                        });
-                    }
-                });
+                    let sqlQ = 'UPDATE billingadress SET fullName = ? ,address1 =? ,address2 = ? ,zipCode = ? ,city = ? ,region = ? ,country = ? WHERE idBillingAdress = ?';
+                    let vals = [value1,value2,value3,value4,value5,value6,value7,value9];
+                    
+                    mysqlConnection.query({
+                        sql: sqlQ,
+                        timeout: 10000, // 10s
+                        values: vals
+                    }, (err, rows, fields) => {
+                        if (!err) {
+                            return res.status(201).json({
+                                message: 'Updated sucessfully'
+                            });
+                        } else {
+                            return res.status(401).json({
+                                error: "something is wrong, please contact support",
+                                info: err.sqlMessage
+                            });
+                        }
+                    });
+                }else{
+                    return res.status(401).json({
+                        message: "not a valid zip code"
+                    });
+                }
             }else{
                 return res.status(401).json({
-                    message: "not a valid zip code"
+                    message: "not a valid full name try not to include special characters like â or é"
                 });
-            }
-        }else{
-            return res.status(401).json({
-                message: "not a valid full name try not to include special characters like â or é"
-            });
-        } 
+            } 
+        }
     }
 
 
 };
 
 exports.updateShippingAdress = (req, res, next) => {
-    console.log("updateShippingAdress");
+   
+    let value1 = req.body.sameAsBilling;
+    let value2 = req.body.idBillingAdress;
+    let value3 = req.body.idUser;
+    let value4 = req.body.note;
+    let value5 = req.params.idShippingAdress
+    
+    let token = req.headers.authorization.split(" ")[1];
+    var decoded = jwt.verify(token, process.env.JWT_KEY);
+
+    if(decoded.role == 'Customer' && decoded.idUser != req.body.idUser){
+        return res.status(401).json({
+            error: "you do not have the permission to execute this action, your information has been loged in our system"
+            //TODO: create a log
+        });
+    }else{
+        if(typeof(value1) == "boolean"){
+            if(typeof(value2) == "number"){
+                if(typeof(value3) == "number"){
+                    if(typeof(value4) == "undefined"){
+                        value4 = "";
+                    }
+                    mysqlConnection.query({
+                        sql: 'UPDATE shippingadress SET sameAsBilling = ? ,idBillingAdress = ? ,idUser = ? ,note = ? WHERE idShippingAdress = ?',
+                        timeout: 10000, // 10s
+                        values: [value1,value2,value3,value4,value5]
+                    }, (err, rows, fields) => {
+                        console.log(err)
+                        if (!err) {
+                            res.status(201).json(
+                                {message : "Updated sucessfully"}
+                            )
+                        }else{
+                            return res.status(401).json({
+                                error: "something is wrong, please contact support",
+                                info: err.sqlMessage
+                            });
+                        }
+                    });
+                }else{
+                    return res.status(401).json({
+                        error: "not a valid user ID"
+                    });
+                }
+            }else{
+                return res.status(401).json({
+                    error: "not a valid billing address ID"
+                });
+            }
+        }else{
+            return res.status(401).json({
+                error: "not a boolean value, please chose true or false"
+            });
+        }
+    }
 };
 
 exports.getPersonalInfo = (req, res, next) => {
-    console.log("getPersonalInfo");
+
+    let token = req.headers.authorization.split(" ")[1];
+    var decoded = jwt.verify(token, process.env.JWT_KEY);
+
+    if(false){
+        return res.status(401).json({
+            error: "you do not have the permission to execute this action, your information has been loged in our system"
+            //TODO: create a log
+        });
+    }else{
+
+        mysqlConnection.query({
+            sql: 'SELECT * FROM personalinfo WHERE `idUser` = ? ',
+            timeout: 10000, // 10s
+            values: [req.params.idUser]
+        }, (err, rows, fields) => {
+            if (!err) {
+                res.status(200).json(rows[0]);
+            } else {
+                return res.status(401).json({
+                    error: "somthing is wrong, pelase contact support",
+                    info : err.sqlMessage
+                });
+            }
+        });
+
+
+    }
+
 };
 
 exports.getUserAdress = (req, res, next) => {
-    console.log("getUserAdress");
+
+    let token = req.headers.authorization.split(" ")[1];
+    var decoded = jwt.verify(token, process.env.JWT_KEY);
+
+    if(false){
+        return res.status(401).json({
+            error: "you do not have the permission to execute this action, your information has been loged in our system"
+            //TODO: create a log
+        });
+    }else{
+
+        mysqlConnection.query({
+            sql: 'SELECT * FROM billingadress as b JOIN useradress as u ON u.idBillingAdress = b.idBillingAdress WHERE idUser = ?',
+            timeout: 10000, // 10s
+            values: [req.params.idUser]
+        }, (err, rows, fields) => {
+            if (!err) {
+                res.status(200).json(rows);
+            } else {
+                return res.status(401).json({
+                    error: "somthing is wrong, pelase contact support",
+                    info : err.sqlMessage
+                });
+            }
+        });
+
+
+    }
+
 };
 
 exports.getShippingAdress = (req, res, next) => {
-    console.log("getShippingAdress");
+    
+    let token = req.headers.authorization.split(" ")[1];
+    var decoded = jwt.verify(token, process.env.JWT_KEY);
+
+    if(false){
+        return res.status(401).json({
+            error: "you do not have the permission to execute this action, your information has been loged in our system"
+            //TODO: create a log
+        });
+    }else{
+
+        mysqlConnection.query({
+            sql: 'SELECT * FROM shippingadress WHERE idUser = ?',
+            timeout: 10000, // 10s
+            values: [req.params.idUser]
+        }, (err, rows, fields) => {
+            if (!err) {
+                res.status(200).json(rows);
+            } else {
+                return res.status(401).json({
+                    error: "somthing is wrong, pelase contact support",
+                    info : err.sqlMessage
+                });
+            }
+        });
+    }
 };
 
 exports.deleteAdress = (req, res, next) => {
-    console.log("deleteAdress");
+    let token = req.headers.authorization.split(" ")[1];
+    var decoded = jwt.verify(token, process.env.JWT_KEY);
+
+
+    mysqlConnection.query({
+        sql: 'Select * FROM billingadress as b JOIN useradress as u ON u.idBillingAdress = b.idBillingAdress WHERE b.idBillingAdress = ?',
+        timeout: 10000, // 10s
+        values: [req.params.idAdress]
+    }, (err, rows, fields) => {
+        if (!err) {
+            console.log(rows)
+            if(decoded.role == 'Customer' && decoded.idUser != rows[0].idUser){
+                return res.status(401).json({
+                    error: "you do not have the permission to execute this action, your information has been loged in our system"
+                    //TODO: create a log
+                });
+            }else{
+                mysqlConnection.query({
+                    sql: 'DELETE FROM billingadress WHERE idBillingadress = ? ',
+                    timeout: 10000, // 10s
+                    values: [req.params.idAdress]
+                }, (err, rows, fields) => {
+                    if (!err) {
+                        mysqlConnection.query({
+                            sql: 'DELETE FROM useradress WHERE idBillingadress = ?',
+                            timeout: 10000, // 10s
+                            values: [req.params.idAdress]
+                        }, (err, rows, fields) => {
+                            if (!err) {
+                                return res.status(201).json({
+                                    message: "Deleted sucessfully"
+                                });
+                            } else {
+                                return res.status(401).json({
+                                    error: "somthing is wrong, pelase contact support",
+                                    info : err.sqlMessage
+                                });
+                            }
+                        });
+                    } else {
+                        return res.status(401).json({
+                            error: "somthing is wrong, pelase contact support",
+                            info : err.sqlMessage
+                        });
+                    }
+                });
+
+            }
+        } else {
+            return res.status(401).json({
+                error: "somthing is wrong, pelase contact support",
+                info : err.sqlMessage
+            });
+        }
+    });
+
+
+
+
+
+   
 };
 
 exports.deleteShippingAdress = (req, res, next) => {
-    console.log("deleteShippingAdress");
+    let token = req.headers.authorization.split(" ")[1];
+    var decoded = jwt.verify(token, process.env.JWT_KEY);
+    mysqlConnection.query({
+        sql: 'Select * FROM shippingadress WHERE idShippingadress = ?',
+        timeout: 10000, // 10s
+        values: [req.params.idShippingAdress]
+    }, (err, rows, fields) => {
+        if (!err) {
+            
+            if(decoded.role == 'Customer' && decoded.idUser != rows[0].idUser){
+                return res.status(401).json({
+                    error: "you do not have the permission to execute this action, your information has been loged in our system"
+                    //TODO: create a log
+                });
+            }else{
+                mysqlConnection.query({
+                    sql: 'DELETE FROM shippingAdress WHERE idShippingAdress = ?',
+                    timeout: 10000, // 10s
+                    values: [req.params.idShippingAdress]
+                }, (err, rows, fields) => {
+                    if (!err) {
+                        return res.status(201).json({
+                            message: "Deleted sucessfully"
+                        });
+                    } else {
+                        return res.status(401).json({
+                            error: "somthing is wrong, pelase contact support",
+                            info : err.sqlMessage
+                        });
+                    }
+                });
+            }
+        } else {
+            return res.status(401).json({
+                error: "somthing is wrong, pelase contact support",
+                info : err.sqlMessage
+            });
+        }
+    });
+
+    
 };
 
 exports.deletePersonalInfo = (req, res, next) => {
-    console.log("deletePersonalInfo");
+    
+    let token = req.headers.authorization.split(" ")[1];
+    var decoded = jwt.verify(token, process.env.JWT_KEY);
+    
+    mysqlConnection.query({
+        sql: 'Select * FROM personalinfo WHERE idPersonalInfo = ?',
+        timeout: 10000, // 10s
+        values: [req.params.idPersonalInfo]
+    }, (err, rows, fields) => {
+        if (!err) {
+            
+            if(decoded.role == 'Customer' && decoded.idUser != rows[0].idUser){
+                return res.status(401).json({
+                    error: "you do not have the permission to execute this action, your information has been loged in our system"
+                    //TODO: create a log
+                });
+            }else{
+                mysqlConnection.query({
+                    sql: 'DELETE FROM personalinfo WHERE idPersonalInfo = ?',
+                    timeout: 10000, // 10s
+                    values: [req.params.idPersonalInfo]
+                }, (err, rows, fields) => {
+                    if (!err) {
+                        return res.status(201).json({
+                            message: "Deleted sucessfully"
+                        });
+                    } else {
+                        return res.status(401).json({
+                            error: "somthing is wrong, pelase contact support",
+                            info : err.sqlMessage
+                        });
+                    }
+                });
+            }
+        } else {
+            return res.status(401).json({
+                error: "somthing is wrong, pelase contact support",
+                info : err.sqlMessage
+            });
+        }
+    });
+
 };
 
 
