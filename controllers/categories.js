@@ -37,13 +37,14 @@ const mysqlConnection = require('../database.js');
 
 */
 
-exports.addSupplier = (req, res) =>{
+exports.addCategorie = (req, res) =>{
     
     let token = req.headers.authorization.split(" ")[1];
     var decoded = jwt.verify(token, process.env.JWT_KEY);
 
     let name = req.body.name
-    let idUser = req.body.idUser
+    let image = req.body.image
+    let idChildCategorie = req.body.idChildCategorie
 
     if(decoded.role == 'Customer'){
         return res.status(401).json({
@@ -53,9 +54,9 @@ exports.addSupplier = (req, res) =>{
     }else{
 
         mysqlConnection.query({
-            sql: 'INSERT INTO suppliers VALUES (NULL, ?, ?)',
+            sql: 'INSERT INTO categories VALUES (NULL, ?, ?, ?)',
             timeout: 10000, // 10s
-            values: [name,idUser]
+            values: [name,image,idChildCategorie]
         }, (err, rows, fields) => {
             if (!err) {
                 return res.status(201).json({
@@ -73,14 +74,15 @@ exports.addSupplier = (req, res) =>{
 
 };
 
-exports.updateSupplier = (req, res) => {
-   
+exports.updateCategorie = (req, res) => {
+    
     let token = req.headers.authorization.split(" ")[1];
     var decoded = jwt.verify(token, process.env.JWT_KEY);
 
     let name = req.body.name
-    let idUser = req.body.idUser
-    let idSupplier = req.params.idSupplier
+    let image = req.body.image
+    let idChildCategorie = req.body.idChildCategorie
+    let idCategorie = req.params.idCategorie
 
     if(decoded.role == 'Customer'){
         return res.status(401).json({
@@ -90,17 +92,17 @@ exports.updateSupplier = (req, res) => {
     }else{
 
         mysqlConnection.query({
-            sql: 'UPDATE suppliers SET name = ?,idUser = ? WHERE idSupplier = ?',
+            sql: 'UPDATE categories SET name = ? ,image = ? ,idChildCategorie = ? WHERE idCategorie = ?',
             timeout: 10000, // 10s
-            values: [name,idUser,idSupplier]
+            values: [name,image,idChildCategorie,idCategorie]
         }, (err, rows, fields) => {
             if (!err) {
                 return res.status(201).json({
-                    message: "Updates suceefully"
+                    message: "Updated suceefully"
                 });
             } else {
                 return res.status(401).json({
-                    error: "somthing is wrong, please contact support",
+                    error: "something is wrong, please contact support",
                     info: err.sqlMessage 
                 });
             }
@@ -110,11 +112,11 @@ exports.updateSupplier = (req, res) => {
 
 };
 
-exports.deleteSupplier = (req, res) => {
+exports.deleteCategorie = (req, res) => {
     let token = req.headers.authorization.split(" ")[1];
     var decoded = jwt.verify(token, process.env.JWT_KEY);
 
-    let idSupplier = req.params.idSupplier
+    let idCategorie = req.params.idCategorie
 
     if(decoded.role == 'Customer'){
         return res.status(401).json({
@@ -123,9 +125,9 @@ exports.deleteSupplier = (req, res) => {
         });
     }else{
         mysqlConnection.query({
-            sql: 'DELETE FROM suppliers WHERE idSupplier = ?',
+            sql: 'DELETE FROM categories WHERE idCategorie = ?',
             timeout: 10000, // 10s
-            values: [idSupplier]
+            values: [idCategorie]
         }, (err, rows, fields) => {
             if (!err) {
                 return res.status(201).json({
@@ -143,12 +145,12 @@ exports.deleteSupplier = (req, res) => {
     
 };
 
-exports.getSupplier = (req, res) => {
+exports.getCategorie = (req, res) => {
 
     let token = req.headers.authorization.split(" ")[1];
     var decoded = jwt.verify(token, process.env.JWT_KEY);
 
-    let idSupplier = req.params.idSupplier
+    let idCategorie = req.params.idCategorie
 
     if(decoded.role == 'Customer'){
         return res.status(401).json({
@@ -157,46 +159,31 @@ exports.getSupplier = (req, res) => {
         });
     }else{
         mysqlConnection.query({
-            sql: 'SELECT * FROM suppliers WHERE idSupplier = ?',
+            sql: 'SELECT * FROM categories WHERE idCategorie = ?',
             timeout: 10000, // 10s
-            values: [idSupplier]
+            values: [idCategorie]
         }, (err, rows, fields) => {
             if (!err) {
+                //res.send(rows)
                 mysqlConnection.query({
-                    sql: 'SELECT * FROM suppliers WHERE idSupplier = ?',
+                    sql: 'SELECT * FROM categories WHERE idChildCategorie = ?',
                     timeout: 10000, // 10s
-                    values: [idSupplier]
-                }, (err, rows, fields) => {
+                    values: [idCategorie]
+                }, (err, rowss, fields) => {
                     if (!err) {
-                        let address = rows
-                        mysqlConnection.query({
-                            sql: 'SELECT b.idBillingAdress, b.fullName ,b.address1 ,b.address2 ,b.zipCode ,b.city ,b.region ,b.country FROM suppliers s, useradress as u , billingadress as b WHERE u.idUser = s.idUser AND b.idBillingadress = u.idBillingadress AND s.idSupplier = ?',
-                            timeout: 10000, // 10s
-                            values: [idSupplier]
-                        }, (err, rowss, fields) => {
-                            if (!err) {
-                                    
-                                let supplier = {
-                                    supplier : rows[0],
-                                    suplierAdresses : rowss
-                                }
-                                    
-                                res.send(supplier);
-                            } else {
-                                return res.status(401).json({
-                                    error: "something is wrong, pelase contact support",
-                                    info : err.sqlMessage
-                                });
-                            }
-                        });
-
-                    } else {
+                        //res.send(rows)
+                        let info = {
+                            categorie : rows[0],
+                            level1Childs : rowss
+                        }
+                        return res.status(200).json(info);
+                    }else{
                         return res.status(401).json({
                             error: "something is wrong, pelase contact support",
                             info : err.sqlMessage
                         });
                     }
-                });
+                });   
             }else{
                 return res.status(401).json({
                     error: "something is wrong, pelase contact support",
@@ -206,3 +193,4 @@ exports.getSupplier = (req, res) => {
         });   
     }
 };
+

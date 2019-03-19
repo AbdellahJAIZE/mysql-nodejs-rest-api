@@ -17,6 +17,8 @@ app.use('/users', require('./routes/users'));
 app.use('/products', require('./routes/products'));
 app.use('/brands', require('./routes/brands'));
 app.use('/suppliers', require('./routes/suppliers'));
+app.use('/categories', require('./routes/categories'));
+app.use('/tags', require('./routes/tags'));
 
 app.get('/', function(req, res){
     res.sendFile(__dirname + '/index.html');

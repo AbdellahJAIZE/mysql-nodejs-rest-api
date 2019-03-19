@@ -37,13 +37,12 @@ const mysqlConnection = require('../database.js');
 
 */
 
-exports.addSupplier = (req, res) =>{
+exports.addTag = (req, res) =>{
     
     let token = req.headers.authorization.split(" ")[1];
     var decoded = jwt.verify(token, process.env.JWT_KEY);
 
-    let name = req.body.name
-    let idUser = req.body.idUser
+    let title = req.body.title
 
     if(decoded.role == 'Customer'){
         return res.status(401).json({
@@ -53,9 +52,9 @@ exports.addSupplier = (req, res) =>{
     }else{
 
         mysqlConnection.query({
-            sql: 'INSERT INTO suppliers VALUES (NULL, ?, ?)',
+            sql: 'INSERT INTO tags VALUES (NULL, ?)',
             timeout: 10000, // 10s
-            values: [name,idUser]
+            values: [title]
         }, (err, rows, fields) => {
             if (!err) {
                 return res.status(201).json({
@@ -73,15 +72,13 @@ exports.addSupplier = (req, res) =>{
 
 };
 
-exports.updateSupplier = (req, res) => {
-   
+exports.updateTag = (req, res) => {
+    
     let token = req.headers.authorization.split(" ")[1];
     var decoded = jwt.verify(token, process.env.JWT_KEY);
 
-    let name = req.body.name
-    let idUser = req.body.idUser
-    let idSupplier = req.params.idSupplier
-
+    let title = req.body.title
+    let idTag = req.params.idTag
     if(decoded.role == 'Customer'){
         return res.status(401).json({
             error: "you do not have the permission to execute this action, your information has been loged in our system"
@@ -90,13 +87,13 @@ exports.updateSupplier = (req, res) => {
     }else{
 
         mysqlConnection.query({
-            sql: 'UPDATE suppliers SET name = ?,idUser = ? WHERE idSupplier = ?',
+            sql: 'UPDATE tags SET title = ? WHERE idTag = ?',
             timeout: 10000, // 10s
-            values: [name,idUser,idSupplier]
+            values: [title,idTag]
         }, (err, rows, fields) => {
             if (!err) {
                 return res.status(201).json({
-                    message: "Updates suceefully"
+                    message: "Updated suceefully"
                 });
             } else {
                 return res.status(401).json({
@@ -110,11 +107,11 @@ exports.updateSupplier = (req, res) => {
 
 };
 
-exports.deleteSupplier = (req, res) => {
+exports.deleteTag = (req, res) => {
     let token = req.headers.authorization.split(" ")[1];
     var decoded = jwt.verify(token, process.env.JWT_KEY);
 
-    let idSupplier = req.params.idSupplier
+    let idTag = req.params.idTag
 
     if(decoded.role == 'Customer'){
         return res.status(401).json({
@@ -123,9 +120,9 @@ exports.deleteSupplier = (req, res) => {
         });
     }else{
         mysqlConnection.query({
-            sql: 'DELETE FROM suppliers WHERE idSupplier = ?',
+            sql: 'DELETE FROM tags WHERE idTag = ?',
             timeout: 10000, // 10s
-            values: [idSupplier]
+            values: [idTag]
         }, (err, rows, fields) => {
             if (!err) {
                 return res.status(201).json({
@@ -133,7 +130,7 @@ exports.deleteSupplier = (req, res) => {
                 });
             } else {
                 return res.status(401).json({
-                    error: "somthing is wrong, pelase contact support",
+                    error: "something is wrong, pelase contact support",
                     info : err.sqlMessage
                 });
             }
@@ -143,12 +140,12 @@ exports.deleteSupplier = (req, res) => {
     
 };
 
-exports.getSupplier = (req, res) => {
+exports.getTag = (req, res) => {
 
     let token = req.headers.authorization.split(" ")[1];
     var decoded = jwt.verify(token, process.env.JWT_KEY);
 
-    let idSupplier = req.params.idSupplier
+    let idTag = req.params.idTag
 
     if(decoded.role == 'Customer'){
         return res.status(401).json({
@@ -157,46 +154,13 @@ exports.getSupplier = (req, res) => {
         });
     }else{
         mysqlConnection.query({
-            sql: 'SELECT * FROM suppliers WHERE idSupplier = ?',
+            sql: 'SELECT * FROM tags WHERE idTag = ?',
             timeout: 10000, // 10s
-            values: [idSupplier]
+            values: [idTag]
         }, (err, rows, fields) => {
             if (!err) {
-                mysqlConnection.query({
-                    sql: 'SELECT * FROM suppliers WHERE idSupplier = ?',
-                    timeout: 10000, // 10s
-                    values: [idSupplier]
-                }, (err, rows, fields) => {
-                    if (!err) {
-                        let address = rows
-                        mysqlConnection.query({
-                            sql: 'SELECT b.idBillingAdress, b.fullName ,b.address1 ,b.address2 ,b.zipCode ,b.city ,b.region ,b.country FROM suppliers s, useradress as u , billingadress as b WHERE u.idUser = s.idUser AND b.idBillingadress = u.idBillingadress AND s.idSupplier = ?',
-                            timeout: 10000, // 10s
-                            values: [idSupplier]
-                        }, (err, rowss, fields) => {
-                            if (!err) {
-                                    
-                                let supplier = {
-                                    supplier : rows[0],
-                                    suplierAdresses : rowss
-                                }
-                                    
-                                res.send(supplier);
-                            } else {
-                                return res.status(401).json({
-                                    error: "something is wrong, pelase contact support",
-                                    info : err.sqlMessage
-                                });
-                            }
-                        });
-
-                    } else {
-                        return res.status(401).json({
-                            error: "something is wrong, pelase contact support",
-                            info : err.sqlMessage
-                        });
-                    }
-                });
+                //res.send(rows)
+                return res.status(200).json(rows[0]);
             }else{
                 return res.status(401).json({
                     error: "something is wrong, pelase contact support",
@@ -206,3 +170,4 @@ exports.getSupplier = (req, res) => {
         });   
     }
 };
+
