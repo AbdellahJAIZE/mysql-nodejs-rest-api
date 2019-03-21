@@ -19,6 +19,7 @@ app.use('/brands', require('./routes/brands'));
 app.use('/suppliers', require('./routes/suppliers'));
 app.use('/categories', require('./routes/categories'));
 app.use('/tags', require('./routes/tags'));
+app.use('/orders', require('./routes/orders'));
 
 app.get('/', function(req, res){
     res.sendFile(__dirname + '/index.html');
